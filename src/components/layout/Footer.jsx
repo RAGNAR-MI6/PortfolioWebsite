@@ -12,17 +12,17 @@ const Footer = () => {
                     </div>
 
                     <div className="flex space-x-6">
-                        <a href="https://github.com/rushikeshpatil2000" target="_blank" rel="noopener noreferrer"
+                        <a href="https://github.com/RAGNAR-MI6" target="_blank" rel="noopener noreferrer"
                             className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400">
                             <span className="sr-only">GitHub</span>
                             <FaGithub className="h-6 w-6" />
                         </a>
-                        <a href="https://linkedin.com/in/rushikesh-patil-b9a4a2201" target="_blank" rel="noopener noreferrer"
+                        <a href="https://www.linkedin.com/in/rushikesh-k-patil/" target="_blank" rel="noopener noreferrer"
                             className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400">
                             <span className="sr-only">LinkedIn</span>
                             <FaLinkedin className="h-6 w-6" />
                         </a>
-                        <a href="https://twitter.com/rushikeshpatil" target="_blank" rel="noopener noreferrer"
+                        {/* <a href="https://twitter.com/rushikeshpatil" target="_blank" rel="noopener noreferrer"
                             className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400">
                             <span className="sr-only">Twitter</span>
                             <FaTwitter className="h-6 w-6" />
@@ -31,7 +31,7 @@ const Footer = () => {
                             className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400">
                             <span className="sr-only">Instagram</span>
                             <FaInstagram className="h-6 w-6" />
-                        </a>
+                        </a> */}
                     </div>
                 </div>
             </div>

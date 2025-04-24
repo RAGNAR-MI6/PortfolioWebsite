@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
+import emailjs from '@emailjs/browser';
 
 const Contact = () => {
+    const formRef = useRef();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -11,6 +13,7 @@ const Contact = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -19,21 +22,32 @@ const Contact = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        // In a real app, you would send the form data to a server
         setIsSubmitting(true);
+        setError('');
 
-        // Simulate submission
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setSubmitted(true);
+        // Using EmailJS to send email
+        emailjs.sendForm(
+            'service_u1sc5hi', // Replace with your EmailJS service ID
+            'template_xzpxw3e', // Replace with your EmailJS template ID
+            formRef.current,
+            'k8Gw7Ute_6MHF9n5K' // Replace with your EmailJS public key
+        )
+            .then((result) => {
+                console.log('Email sent successfully:', result.text);
+                setIsSubmitting(false);
+                setSubmitted(true);
 
-            // Reset form after 3 seconds
-            setTimeout(() => {
-                setFormData({ name: '', email: '', subject: '', message: '' });
-                setSubmitted(false);
-            }, 3000);
-        }, 1500);
+                // Reset form after 3 seconds
+                setTimeout(() => {
+                    setFormData({ name: '', email: '', subject: '', message: '' });
+                    setSubmitted(false);
+                }, 3000);
+            })
+            .catch((error) => {
+                console.error('Failed to send email:', error.text);
+                setIsSubmitting(false);
+                setError('Failed to send message. Please try again later.');
+            });
     };
 
     // Animation variants
@@ -168,7 +182,7 @@ const Contact = () => {
                                 </motion.div>
                             </div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                                 <motion.div
                                     variants={containerVariants}
                                     initial="hidden"
@@ -242,6 +256,17 @@ const Contact = () => {
                                         </div>
                                     </motion.div>
 
+                                    {error && (
+                                        <motion.div
+                                            variants={itemVariants}
+                                            className="mt-4 text-red-600 dark:text-red-400 text-sm"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                        >
+                                            {error}
+                                        </motion.div>
+                                    )}
+
                                     <motion.div variants={itemVariants} className="mt-6">
                                         <motion.button
                                             type="submit"
@@ -250,7 +275,17 @@ const Contact = () => {
                                             whileHover={{ scale: 1.03 }}
                                             whileTap={{ scale: 0.98 }}
                                         >
-                                            {isSubmitting ? 'Sending...' : 'Send Message'}
+                                            {isSubmitting ? (
+                                                <>
+                                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Sending...
+                                                </>
+                                            ) : (
+                                                'Send Message'
+                                            )}
                                         </motion.button>
                                     </motion.div>
                                 </motion.div>
