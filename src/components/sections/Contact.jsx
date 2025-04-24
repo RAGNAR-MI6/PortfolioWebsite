@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaCheckCircle } from 'react-icons/fa';
 import emailjs from '@emailjs/browser';
 
 const Contact = () => {
@@ -11,19 +11,94 @@ const Contact = () => {
         subject: '',
         message: '',
     });
+    const [touched, setTouched] = useState({
+        name: false,
+        email: false,
+        subject: false,
+        message: false,
+    });
+    const [validations, setValidations] = useState({
+        name: true,
+        email: true,
+        subject: true,
+        message: true,
+    });
+    const [isFormValid, setIsFormValid] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
 
+    // Validation rules
+    const validationRules = {
+        name: (value) => value.trim().length >= 2,
+        email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+        subject: (value) => value.trim().length >= 3,
+        message: (value) => value.trim().length >= 10,
+    };
+
+    // Validation messages
+    const validationMessages = {
+        name: 'Name must be at least 2 characters',
+        email: 'Please enter a valid email address',
+        subject: 'Subject must be at least 3 characters',
+        message: 'Message must be at least 10 characters',
+    };
+
+    // Check overall form validity
+    useEffect(() => {
+        const isValid = Object.keys(validations).every(key => validations[key]);
+        const isComplete = Object.keys(formData).every(key => formData[key].trim() !== '');
+        setIsFormValid(isValid && isComplete);
+    }, [formData, validations]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Validate on change if field has been touched
+        if (touched[name]) {
+            setValidations(prev => ({
+                ...prev,
+                [name]: validationRules[name](value)
+            }));
+        }
+    };
+
+    const handleBlur = (e) => {
+        const { name } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        setValidations(prev => ({
+            ...prev,
+            [name]: validationRules[name](formData[name])
+        }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setIsSubmitting(true);
+
+        // Set all fields as touched and validate
+        const touchedState = Object.keys(touched).reduce((acc, key) => {
+            acc[key] = true;
+            return acc;
+        }, {});
+        setTouched(touchedState);
+
+        const validationState = Object.keys(validations).reduce((acc, key) => {
+            acc[key] = validationRules[key](formData[key]);
+            return acc;
+        }, {});
+        setValidations(validationState);
+
+        // Check if form is valid
+        const isValid = Object.values(validationState).every(Boolean);
+
+        if (!isValid) {
+            setError('Please fix the validation errors before submitting.');
+            return;
+        }
+
         setError('');
+        setIsSubmitting(true);
 
         // Using EmailJS to send email
         emailjs.sendForm(
@@ -41,6 +116,12 @@ const Contact = () => {
                 setTimeout(() => {
                     setFormData({ name: '', email: '', subject: '', message: '' });
                     setSubmitted(false);
+                    setTouched({
+                        name: false,
+                        email: false,
+                        subject: false,
+                        message: false,
+                    });
                 }, 3000);
             })
             .catch((error) => {
@@ -192,7 +273,7 @@ const Contact = () => {
                                         <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Name
                                         </label>
-                                        <div className="mt-1">
+                                        <div className="mt-1 relative">
                                             <input
                                                 id="name"
                                                 name="name"
@@ -200,16 +281,32 @@ const Contact = () => {
                                                 required
                                                 value={formData.name}
                                                 onChange={handleChange}
-                                                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 transition-all duration-200 hover:border-indigo-300"
+                                                onBlur={handleBlur}
+                                                className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm rounded-md p-2 transition-all duration-200 hover:border-indigo-300
+                                                ${touched.name && !validations.name ?
+                                                        'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' :
+                                                        touched.name && validations.name ?
+                                                            'border-green-500 dark:border-green-500 bg-green-50 dark:bg-green-900/20' :
+                                                            'border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+                                                    }`}
+                                                placeholder="John Doe"
                                             />
+                                            {touched.name && validations.name && (
+                                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-500">
+                                                    <FaCheckCircle />
+                                                </div>
+                                            )}
                                         </div>
+                                        {touched.name && !validations.name && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationMessages.name}</p>
+                                        )}
                                     </motion.div>
 
                                     <motion.div variants={itemVariants} className="mt-6">
                                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Email
                                         </label>
-                                        <div className="mt-1">
+                                        <div className="mt-1 relative">
                                             <input
                                                 id="email"
                                                 name="email"
@@ -217,16 +314,32 @@ const Contact = () => {
                                                 required
                                                 value={formData.email}
                                                 onChange={handleChange}
-                                                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 transition-all duration-200 hover:border-indigo-300"
+                                                onBlur={handleBlur}
+                                                className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm rounded-md p-2 transition-all duration-200 hover:border-indigo-300
+                                                ${touched.email && !validations.email ?
+                                                        'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' :
+                                                        touched.email && validations.email ?
+                                                            'border-green-500 dark:border-green-500 bg-green-50 dark:bg-green-900/20' :
+                                                            'border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+                                                    }`}
+                                                placeholder="john.doe@example.com"
                                             />
+                                            {touched.email && validations.email && (
+                                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-500">
+                                                    <FaCheckCircle />
+                                                </div>
+                                            )}
                                         </div>
+                                        {touched.email && !validations.email && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationMessages.email}</p>
+                                        )}
                                     </motion.div>
 
                                     <motion.div variants={itemVariants} className="mt-6">
                                         <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Subject
                                         </label>
-                                        <div className="mt-1">
+                                        <div className="mt-1 relative">
                                             <input
                                                 id="subject"
                                                 name="subject"
@@ -234,16 +347,32 @@ const Contact = () => {
                                                 required
                                                 value={formData.subject}
                                                 onChange={handleChange}
-                                                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 transition-all duration-200 hover:border-indigo-300"
+                                                onBlur={handleBlur}
+                                                className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm rounded-md p-2 transition-all duration-200 hover:border-indigo-300
+                                                ${touched.subject && !validations.subject ?
+                                                        'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' :
+                                                        touched.subject && validations.subject ?
+                                                            'border-green-500 dark:border-green-500 bg-green-50 dark:bg-green-900/20' :
+                                                            'border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+                                                    }`}
+                                                placeholder="Project Inquiry"
                                             />
+                                            {touched.subject && validations.subject && (
+                                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-green-500">
+                                                    <FaCheckCircle />
+                                                </div>
+                                            )}
                                         </div>
+                                        {touched.subject && !validations.subject && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationMessages.subject}</p>
+                                        )}
                                     </motion.div>
 
                                     <motion.div variants={itemVariants} className="mt-6">
                                         <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                             Message
                                         </label>
-                                        <div className="mt-1">
+                                        <div className="mt-1 relative">
                                             <textarea
                                                 id="message"
                                                 name="message"
@@ -251,9 +380,25 @@ const Contact = () => {
                                                 required
                                                 value={formData.message}
                                                 onChange={handleChange}
-                                                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 transition-all duration-200 hover:border-indigo-300"
+                                                onBlur={handleBlur}
+                                                className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm rounded-md p-2 transition-all duration-200 hover:border-indigo-300
+                                                ${touched.message && !validations.message ?
+                                                        'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' :
+                                                        touched.message && validations.message ?
+                                                            'border-green-500 dark:border-green-500 bg-green-50 dark:bg-green-900/20' :
+                                                            'border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+                                                    }`}
+                                                placeholder="Your message here..."
                                             />
+                                            {touched.message && validations.message && (
+                                                <div className="absolute right-2 top-4 text-green-500">
+                                                    <FaCheckCircle />
+                                                </div>
+                                            )}
                                         </div>
+                                        {touched.message && !validations.message && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationMessages.message}</p>
+                                        )}
                                     </motion.div>
 
                                     {error && (
@@ -270,10 +415,12 @@ const Contact = () => {
                                     <motion.div variants={itemVariants} className="mt-6">
                                         <motion.button
                                             type="submit"
-                                            disabled={isSubmitting}
-                                            className={`inline-flex justify-center items-center w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                            whileHover={{ scale: 1.03 }}
-                                            whileTap={{ scale: 0.98 }}
+                                            disabled={isSubmitting || !isFormValid}
+                                            className={`inline-flex justify-center items-center w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
+                                            ${isFormValid ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-400 cursor-not-allowed'}
+                                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                            whileHover={isFormValid ? { scale: 1.03 } : {}}
+                                            whileTap={isFormValid ? { scale: 0.98 } : {}}
                                         >
                                             {isSubmitting ? (
                                                 <>
