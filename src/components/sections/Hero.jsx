@@ -1,8 +1,66 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import profileImage from '../../assets/profile-image.jpg';
 
 const Hero = () => {
+    const [windowSize, setWindowSize] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight
+    });
+    const [imageSize, setImageSize] = useState({ width: 0, height: 0, aspectRatio: 1 });
+    const imageRef = useRef(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        };
+
+        // Add event listener
+        window.addEventListener('resize', handleResize);
+
+        // Clean up
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Calculate proper image dimensions once it's loaded
+    useEffect(() => {
+        const img = new Image();
+        img.src = profileImage;
+
+        img.onload = () => {
+            const aspectRatio = img.width / img.height;
+            setImageSize({
+                width: img.width,
+                height: img.height,
+                aspectRatio: aspectRatio
+            });
+        };
+    }, []);
+
+    // Calculate container dimensions based on screen size and image aspect ratio
+    const getContainerDimensions = () => {
+        let width, height;
+        const maxWidth = windowSize.width < 1024 ? Math.min(windowSize.width * 0.8, 400) : Math.min(windowSize.width * 0.35, 500);
+
+        if (imageSize.aspectRatio > 1) {
+            // Landscape image
+            width = maxWidth;
+            height = maxWidth / imageSize.aspectRatio;
+        } else {
+            // Portrait or square image
+            height = windowSize.width < 1024 ? Math.min(windowSize.width * 0.8, 500) : Math.min(windowSize.width * 0.45, 600);
+            width = height * imageSize.aspectRatio;
+        }
+
+        return { width, height };
+    };
+
+    const dimensions = getContainerDimensions();
+
     return (
         <section className="relative bg-white dark:bg-gray-900 py-20 sm:py-28 overflow-hidden">
             <motion.div
@@ -42,7 +100,7 @@ const Hero = () => {
             </motion.div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+                <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-center">
                     <div className="sm:text-center md:max-w-2xl md:mx-auto lg:col-span-6 lg:text-left">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -113,22 +171,29 @@ const Hero = () => {
                             </motion.div>
                         </motion.div>
                     </div>
-                    <div className="mt-12 sm:mt-16 lg:mt-0 lg:col-span-6">
+
+                    <div className="mt-12 sm:mt-16 lg:mt-0 lg:col-span-6 flex justify-center lg:justify-end">
                         <motion.div
-                            className="pl-4 -mr-48 sm:pl-6 md:-mr-16 lg:px-0 lg:m-0 lg:relative lg:h-full"
+                            className="relative mx-auto lg:mx-0"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.8, delay: 0.2 }}
+                            style={{
+                                width: dimensions.width,
+                                height: dimensions.height,
+                                maxWidth: '100%'
+                            }}
                         >
                             <motion.div
-                                className="w-full rounded-xl shadow-xl ring-1 ring-black ring-opacity-5 overflow-hidden lg:absolute lg:inset-y-0 lg:right-0 lg:w-auto lg:h-full"
+                                className="w-full h-full rounded-xl shadow-xl overflow-hidden"
                                 whileHover={{ scale: 1.03 }}
                                 transition={{ type: "spring", stiffness: 300 }}
                             >
+                                {/* Gradient overlay effect */}
                                 <motion.div
-                                    className="absolute inset-0 bg-indigo-500 mix-blend-multiply opacity-0"
+                                    className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 mix-blend-multiply opacity-0"
                                     animate={{
-                                        opacity: [0, 0.1, 0],
+                                        opacity: [0, 0.15, 0],
                                     }}
                                     transition={{
                                         duration: 3,
@@ -136,15 +201,36 @@ const Hero = () => {
                                         repeatType: "reverse",
                                     }}
                                 />
-                                <motion.img
-                                    className="w-full lg:h-full object-cover"
-                                    src={profileImage}
-                                    alt="Rushikesh Patil - Software Developer"
-                                    initial={{ scale: 1.2, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ duration: 1.2, ease: "easeOut" }}
-                                    whileHover={{ scale: 1.05 }}
+
+                                {/* Border glow effect */}
+                                <motion.div
+                                    className="absolute inset-0 rounded-xl"
+                                    animate={{
+                                        boxShadow: [
+                                            "0 0 0 0px rgba(99,102,241,0)",
+                                            "0 0 0 3px rgba(99,102,241,0.3)",
+                                            "0 0 0 0px rgba(99,102,241,0)"
+                                        ]
+                                    }}
+                                    transition={{
+                                        duration: 2.5,
+                                        repeat: Infinity,
+                                        repeatType: "loop"
+                                    }}
                                 />
+
+                                {/* Actual image */}
+                                <motion.div className="w-full h-full rounded-xl overflow-hidden">
+                                    <motion.img
+                                        ref={imageRef}
+                                        className="w-full h-full object-contain"
+                                        src={profileImage}
+                                        alt="Rushikesh Patil - Software Developer"
+                                        initial={{ scale: 1.2, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ duration: 1.2, ease: "easeOut" }}
+                                    />
+                                </motion.div>
                             </motion.div>
                         </motion.div>
                     </div>
