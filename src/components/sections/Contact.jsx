@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaCheckCircle } from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaCheckCircle, FaReply, FaCalendarCheck, FaClock } from 'react-icons/fa';
 import emailjs from '@emailjs/browser';
 
 const Contact = () => {
@@ -100,15 +100,40 @@ const Contact = () => {
         setError('');
         setIsSubmitting(true);
 
-        // Using EmailJS to send email
+        // Get current date and time for the email
+        const now = new Date();
+        const timeString = now.toLocaleString();
+
+        // Using EmailJS to send email (notification to you)
         emailjs.sendForm(
-            'service_u1sc5hi', // Replace with your EmailJS service ID
-            'template_xzpxw3e', // Replace with your EmailJS template ID
+            'service_u1sc5hi', // Your EmailJS service ID
+            'template_xzpxw3e', // Your EmailJS template ID for notifications
             formRef.current,
-            'k8Gw7Ute_6MHF9n5K' // Replace with your EmailJS public key
+            'k8Gw7Ute_6MHF9n5K' // Your EmailJS public key
         )
             .then((result) => {
                 console.log('Email sent successfully:', result.text);
+
+                // Send auto-reply email to the user
+                emailjs.send(
+                    'service_u1sc5hi', // Your EmailJS service ID
+                    'template_0ot8vtp', // Your EmailJS template ID for auto-replies
+                    {
+                        name: formData.name.split(' ')[0],
+                        email: formData.email,
+                        subject: formData.subject,
+                        message: formData.message,
+                        time: timeString
+                    },
+                    'k8Gw7Ute_6MHF9n5K' // Your EmailJS public key
+                )
+                    .then((response) => {
+                        console.log('Auto-reply sent successfully:', response.text);
+                    })
+                    .catch((error) => {
+                        console.error('Failed to send auto-reply:', error.text);
+                    });
+
                 setIsSubmitting(false);
                 setSubmitted(true);
 
@@ -235,33 +260,120 @@ const Contact = () => {
                         whileHover={{ scale: 1.01 }}
                     >
                         {submitted ? (
-                            <div className="text-center py-8">
+                            <motion.div
+                                className="py-8 overflow-hidden relative"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                {/* Background decorative elements */}
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-100 dark:bg-indigo-900/30 rounded-full -mr-12 -mt-12 z-0"></div>
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-green-100 dark:bg-green-900/20 rounded-full -ml-16 -mb-16 z-0"></div>
+
+                                {/* Success icon with animation */}
                                 <motion.div
+                                    className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg relative z-10"
                                     initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ duration: 0.5 }}
+                                    animate={{
+                                        scale: [0.8, 1.2, 1],
+                                        opacity: 1,
+                                        rotate: [0, 10, -10, 0]
+                                    }}
+                                    transition={{
+                                        duration: 0.8,
+                                        times: [0, 0.6, 0.8, 1],
+                                        ease: "easeInOut"
+                                    }}
                                 >
-                                    <motion.div
-                                        className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100"
-                                        animate={{
-                                            scale: [1, 1.2, 1],
-                                        }}
-                                        transition={{
-                                            duration: 0.6,
-                                            times: [0, 0.5, 1],
-                                            repeat: 1
-                                        }}
-                                    >
-                                        <svg className="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </motion.div>
-                                    <h3 className="mt-3 text-lg font-medium text-gray-900 dark:text-white">Thank you!</h3>
-                                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                        Your message has been sent successfully. I'll get back to you soon!
+                                    <svg className="h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </motion.div>
+
+                                {/* Success message with animation */}
+                                <motion.div
+                                    className="text-center mt-6 relative z-10"
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.3, duration: 0.5 }}
+                                >
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+                                        Message Received!
+                                    </h2>
+                                    <p className="mt-2 text-gray-600 dark:text-gray-300 font-medium">
+                                        Thanks for reaching out, {formData.name.split(' ')[0]}!
                                     </p>
                                 </motion.div>
-                            </div>
+
+                                {/* Information cards */}
+                                <motion.div
+                                    className="mt-8 grid gap-4 relative z-10"
+                                    variants={containerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    <motion.div
+                                        variants={itemVariants}
+                                        className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 flex items-start shadow-md border border-indigo-100 dark:border-indigo-700/30"
+                                        whileHover={{ scale: 1.02, x: 5 }}
+                                    >
+                                        <div className="bg-indigo-100 dark:bg-indigo-800 p-2 rounded-full mr-4">
+                                            <FaReply className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-gray-900 dark:text-white">Quick Response</h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                I'll review your message promptly and get back to you.
+                                            </p>
+                                        </div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        variants={itemVariants}
+                                        className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 flex items-start shadow-md border border-purple-100 dark:border-purple-700/30"
+                                        whileHover={{ scale: 1.02, x: 5 }}
+                                    >
+                                        <div className="bg-purple-100 dark:bg-purple-800 p-2 rounded-full mr-4">
+                                            <FaCalendarCheck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-gray-900 dark:text-white">Next Steps</h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                If needed, we can schedule a call to discuss your project requirements.
+                                            </p>
+                                        </div>
+                                    </motion.div>
+
+                                    <motion.div
+                                        variants={itemVariants}
+                                        className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 flex items-start shadow-md border border-green-100 dark:border-green-700/30"
+                                        whileHover={{ scale: 1.02, x: 5 }}
+                                    >
+                                        <div className="bg-green-100 dark:bg-green-800 p-2 rounded-full mr-4">
+                                            <FaClock className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-gray-900 dark:text-white">Response Time</h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                I typically respond within 24 hours during business days.
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+
+                                {/* Return to form button with animation */}
+                                <motion.button
+                                    className="mt-8 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 relative z-10"
+                                    onClick={() => setSubmitted(false)}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.6, duration: 0.3 }}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    Send Another Message
+                                </motion.button>
+                            </motion.div>
                         ) : (
                             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                                 <motion.div
